@@ -3,13 +3,23 @@ package routes
 import (
 	"net/http"
 	"github.com/aoideee/lab2-tyshadaniels/internal/handlers"
+	"github.com/aoideee/lab2-tyshadaniels/internal/middleware"
 )
 
-// SetupRoutes configures the application's HTTP routes and maps them to handlers
 func SetupRoutes(mux *http.ServeMux) {
-	// Register handlers for specific URL patterns
-	mux.HandleFunc("/", handlers.Home)
-	mux.HandleFunc("/about", handlers.About)
-	mux.HandleFunc("/contact", handlers.Contact)
-	mux.HandleFunc("/quote", handlers.Quote)
+	// Wrap the handlers with the middleware
+	// This ensures every request goes through the Logger AND the Counter
+	
+	// Helper to chain middleware: Logger -> Counter -> Handler
+	chain := func(h http.HandlerFunc) http.Handler {
+		return middleware.LoggingMiddleware(
+			middleware.RequestCountMiddleware(http.HandlerFunc(h)),
+		)
+	}
+
+	// Registers handlers using the chain
+	mux.Handle("/", chain(handlers.Home))
+	mux.Handle("/about", chain(handlers.About))
+	mux.Handle("/contact", chain(handlers.Contact))
+	mux.Handle("/quote", chain(handlers.Quote))
 }
